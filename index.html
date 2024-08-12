@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:,">
+  <title>Safe Owners</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: hsl(216deg 50% 90%);
+      color: hsl(216deg 50% 10%);
+      display: grid;
+      place-items: center;
+      block-size: 100dvb;
+      margin: 0;
+    }
+
+    header {
+      align-self: end;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-block-end: 16px;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin-block-end: 8px;
+    }
+
+    form {
+      align-self: start;
+      display: flex;
+      flex-direction: column;
+    }
+
+    label {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-block-end: 2px;
+    }
+
+    input,
+    button {
+      font-size: 1rem;
+      margin-block-end: 8px;
+      padding-inline: 4px;
+      padding-block: 6px;
+      border-radius: 4px;
+      border: 1px solid hsl(216deg 50% 50%);
+      transition: filter 400ms;
+
+      &:hover {
+        filter: brightness(105%);
+        transition: filter 200ms;
+      }
+
+      &:focus {
+        outline: 1px solid hsl(216deg 50% 50%);
+      }
+    }
+
+    input {
+      inline-size: 35rem;
+    }
+
+    button {
+      inline-size: fit-content;
+      cursor: pointer;
+    }
+
+    ul,
+    li {
+      padding: 0;
+    }
+
+    #tree {
+      --spacing: 1.5rem;
+      --radius: 8px;
+      font-size: 1.1rem;
+      line-height: 1.5;
+      margin-inline-start: -16px;
+
+      & li {
+        list-style-type: none;
+        position: relative;
+        padding-inline-start: 38px;
+      }
+
+      & ul {
+        margin-inline-start: -16px;
+      }
+
+      & ul li {
+        border-inline-start: 2px solid hsl(216deg 50% 60%);
+
+        &:last-child {
+          border-color: transparent;
+        }
+
+        &::before {
+          content: '';
+          position: absolute;
+          inset-block-start: calc(var(--spacing) / -2);
+          inset-inline-start: -2px;
+          inline-size: calc(var(--spacing) + 2px);
+          block-size: calc(var(--spacing) + 1px);
+          border: solid hsl(216deg 50% 60%);
+          border-width: 0 0 2px 2px;
+        }
+      }
+
+      & summary {
+        list-style-type: none;
+        pointer-events: none;
+      }
+
+      & li::after,
+      & summary::before {
+        content: '';
+        position: absolute;
+        inset-block-start: calc(var(--spacing) / 2 - var(--radius));
+        inset-inline-start: calc(var(--spacing) - var(--radius) - 1px);
+        inline-size: calc(2 * var(--radius));
+        block-size: calc(2 * var(--radius));
+        border-radius: 50%;
+        background: hsl(216deg 50% 60%);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Safe Owners</h1>
+    <a href="https://github.com/ardislu/safe-owners">GitHub</a>
+  </header>
+
+  <form>
+    <label for="safe">Safe Smart Contract</label>
+    <input id="safe" name="safe" pattern="0x[a-fA-F0-9]{40}" placeholder="0x8CF60B289f8d31F737049B590b5E4285Ff0Bd1D1" value="0x8CF60B289f8d31F737049B590b5E4285Ff0Bd1D1" required>
+
+    <label for="rpc">JSON-RPC</label>
+    <input id="rpc" name="rpc" type="url" placeholder="https://ethereum.publicnode.com" value="https://ethereum.publicnode.com" required>
+
+    <button>Lookup owners</button>
+
+    <output>
+      <ul id="tree"></ul>
+    </output>
+  </form>
+
+  <script type="module">
+    const form = document.querySelector('form');
+    const tree = document.querySelector('#tree');
+
+    async function getOwners(safe, rpc) {
+      const response = await fetch(rpc, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify([
+          {
+            jsonrpc: '2.0',
+            id: 'owners',
+            method: 'eth_call',
+            params: [
+              {
+                to: safe,
+                data: '0xa0e67e2b' // getOwners()
+              },
+              'safe'
+            ]
+          },
+          {
+            jsonrpc: '2.0',
+            id: 'threshold',
+            method: 'eth_call',
+            params: [
+              {
+                to: safe,
+                data: '0xe75235b8' // getThreshold()
+              },
+              'safe'
+            ]
+          }
+        ])
+      }).then(r => r.json());
+      const { owners, threshold } = response.reduce((a, c) => ({ ...a, [c.id]: c.result }), {});
+      return {
+        owners: [...owners.replace('0x', '').substring(128).matchAll(/.{64}/g)].map(o => `0x${o[0].substring(24)}`),
+        threshold: parseInt(threshold)
+      }
+    }
+
+    async function insertTreeNode(root, safe, rpc) {
+      const { owners, threshold } = await getOwners(safe, rpc);
+      if (owners.length === 0) {
+        root.insertAdjacentHTML('beforeend', `<li>${safe}</li>`);
+        return;
+      }
+      root.insertAdjacentHTML('beforeend', `<li><details open><summary tabindex="-1">${safe} (${threshold}-of-${owners.length})</summary></details></li>`);
+      const newRoot = document.createElement('ul');
+      root.querySelector('details').insertAdjacentElement('beforeend', newRoot);
+      for (const owner of owners) {
+        await insertTreeNode(newRoot, owner, rpc);
+      }
+    }
+
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const { safe, rpc } = Object.fromEntries(new FormData(e.target));
+      await insertTreeNode(tree, safe, rpc);
+    });
+  </script>
+</body>
+
+</html>
