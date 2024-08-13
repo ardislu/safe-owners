@@ -79,29 +79,9 @@
     }
 
     ul {
-      margin-inline-start: -16px;
-    }
-
-    li {
-      padding-inline-start: 38px;
-    }
-
-    li::after {
-      content: '';
-      position: absolute;
-      inset-block-start: 4px;
-      inset-inline-start: 16px;
-      inline-size: 16px;
-      aspect-ratio: 1;
-      border-radius: 8px;
-      background: hsl(216deg 50% 60%);
-    }
-
-    #tree {
-      --spacing: 1.5rem;
-      --radius: 8px;
       font-size: 1.1rem;
       line-height: 1.5;
+      margin-inline-start: -16px;
 
       & ul li {
         border-inline-start: 2px solid hsl(216deg 50% 60%);
@@ -120,6 +100,21 @@
           border: solid hsl(216deg 50% 60%);
           border-width: 0 0 2px 2px;
         }
+      }
+    }
+
+    li {
+      padding-inline-start: 38px;
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset-block-start: 4px;
+        inset-inline-start: 16px;
+        inline-size: 16px;
+        aspect-ratio: 1;
+        border-radius: 8px;
+        background: hsl(216deg 50% 60%);
       }
     }
   </style>
@@ -141,13 +136,13 @@
     <button>Lookup owners</button>
 
     <output>
-      <ul id="tree"></ul>
+      <ul></ul>
     </output>
   </form>
 
   <script type="module">
     const form = document.querySelector('form');
-    const tree = document.querySelector('#tree');
+    const tree = document.querySelector('ul');
 
     async function getOwners(safe, rpc) {
       const response = await fetch(rpc, {
