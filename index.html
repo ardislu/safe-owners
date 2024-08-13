@@ -34,6 +34,17 @@
       align-self: start;
       display: flex;
       flex-direction: column;
+
+      &[data-loading] button {
+        cursor: not-allowed;
+        filter: unset;
+        background-color: hsl(216deg 15% 80%);
+      }
+
+      &[data-loading] output::before {
+        content: 'Loading...';
+        content: '⏳' / 'Loading...';
+      }
     }
 
     label {
@@ -198,9 +209,17 @@
 
     form.addEventListener('submit', async e => {
       e.preventDefault();
+
+      if (e.target.hasAttribute('data-loading')) {
+        return;
+      }
+      e.target.setAttribute('data-loading', '');
+
       const { safe, rpc } = Object.fromEntries(new FormData(e.target));
       tree.innerHTML = '';
       await insertTreeNode(tree, safe, rpc);
+
+      e.target.removeAttribute('data-loading');
     });
   </script>
 </body>
