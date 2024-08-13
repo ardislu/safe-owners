@@ -194,13 +194,31 @@
               },
               'safe'
             ]
+          },
+          {
+            jsonrpc: '2.0',
+            id: 'required',
+            method: 'eth_call',
+            params: [
+              {
+                to: safe,
+                data: '0xdc8452cd' // required()
+              },
+              'safe'
+            ]
           }
         ])
       }).then(r => r.json());
-      const { owners, threshold } = response.reduce((a, c) => ({ ...a, [c.id]: c.result }), {});
+      const { owners, threshold, required } = response.reduce((a, c) => ({ ...a, [c.id]: c.result }), {});
+      if (owners === undefined) { // Smart contract reverted
+        return {
+          owners: [safe],
+          threshold: -1 // Sentinel value for non Safe smart contract
+        }
+      }
       return {
         owners: [...owners.replace('0x', '').substring(128).matchAll(/.{64}/g)].map(o => `0x${o[0].substring(24)}`),
-        threshold: parseInt(threshold)
+        threshold: Number.isNaN(parseInt(threshold)) ? parseInt(required) : parseInt(threshold)
       }
     }
 
@@ -208,6 +226,10 @@
       const { owners, threshold } = await getOwners(safe, rpc);
       if (owners.length === 0) {
         root.insertAdjacentHTML('beforeend', `<li>${safe}</li>`);
+        return;
+      }
+      else if (threshold === -1) {
+        root.insertAdjacentHTML('beforeend', `<li>${safe} (Unknown smart contract)</li>`);
         return;
       }
       root.insertAdjacentHTML('beforeend', `<li>${safe} (${threshold}-of-${owners.length})</li>`);
