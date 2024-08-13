@@ -73,7 +73,28 @@
 
     ul,
     li {
+      list-style-type: none;
       padding: 0;
+      position: relative;
+    }
+
+    ul {
+      margin-inline-start: -16px;
+    }
+
+    li {
+      padding-inline-start: 38px;
+    }
+
+    li::after {
+      content: '';
+      position: absolute;
+      inset-block-start: 4px;
+      inset-inline-start: 16px;
+      inline-size: 16px;
+      aspect-ratio: 1;
+      border-radius: 8px;
+      background: hsl(216deg 50% 60%);
     }
 
     #tree {
@@ -81,17 +102,6 @@
       --radius: 8px;
       font-size: 1.1rem;
       line-height: 1.5;
-      margin-inline-start: -16px;
-
-      & li {
-        list-style-type: none;
-        position: relative;
-        padding-inline-start: 38px;
-      }
-
-      & ul {
-        margin-inline-start: -16px;
-      }
 
       & ul li {
         border-inline-start: 2px solid hsl(216deg 50% 60%);
@@ -103,30 +113,13 @@
         &::before {
           content: '';
           position: absolute;
-          inset-block-start: calc(var(--spacing) / -2);
+          inset-block-start: -12px;
           inset-inline-start: -2px;
-          inline-size: calc(var(--spacing) + 2px);
-          block-size: calc(var(--spacing) + 1px);
+          inline-size: 26px;
+          block-size: 25px;
           border: solid hsl(216deg 50% 60%);
           border-width: 0 0 2px 2px;
         }
-      }
-
-      & summary {
-        list-style-type: none;
-        pointer-events: none;
-      }
-
-      & li::after,
-      & summary::before {
-        content: '';
-        position: absolute;
-        inset-block-start: calc(var(--spacing) / 2 - var(--radius));
-        inset-inline-start: calc(var(--spacing) - var(--radius) - 1px);
-        inline-size: calc(2 * var(--radius));
-        block-size: calc(2 * var(--radius));
-        border-radius: 50%;
-        background: hsl(216deg 50% 60%);
       }
     }
   </style>
@@ -200,9 +193,9 @@
         root.insertAdjacentHTML('beforeend', `<li>${safe}</li>`);
         return;
       }
-      root.insertAdjacentHTML('beforeend', `<li><details open><summary tabindex="-1">${safe} (${threshold}-of-${owners.length})</summary></details></li>`);
+      root.insertAdjacentHTML('beforeend', `<li>${safe} (${threshold}-of-${owners.length})</li>`);
       const newRoot = document.createElement('ul');
-      root.querySelector('details').insertAdjacentElement('beforeend', newRoot);
+      root.querySelector('li:last-child').insertAdjacentElement('beforeend', newRoot);
       for (const owner of owners) {
         await insertTreeNode(newRoot, owner, rpc);
       }
