@@ -199,6 +199,7 @@
     form.addEventListener('submit', async e => {
       e.preventDefault();
       const { safe, rpc } = Object.fromEntries(new FormData(e.target));
+      tree.innerHTML = '';
       await insertTreeNode(tree, safe, rpc);
     });
   </script>
