@@ -150,7 +150,7 @@
 
   <form>
     <label for="safe">Safe Smart Contract</label>
-    <input id="safe" name="safe" pattern="0x[a-fA-F0-9]{40}" placeholder="0x8CF60B289f8d31F737049B590b5E4285Ff0Bd1D1" value="0x8CF60B289f8d31F737049B590b5E4285Ff0Bd1D1" required>
+    <input id="safe" name="safe" pattern="(.+:)?0x[a-fA-F0-9]{40}" placeholder="0x8CF60B289f8d31F737049B590b5E4285Ff0Bd1D1" value="0x8CF60B289f8d31F737049B590b5E4285Ff0Bd1D1" required>
 
     <label for="rpc">JSON-RPC</label>
     <input id="rpc" name="rpc" type="url" placeholder="https://ethereum.publicnode.com" value="https://ethereum.publicnode.com" required>
@@ -250,7 +250,7 @@
 
       const { safe, rpc } = Object.fromEntries(new FormData(e.target));
       tree.innerHTML = '';
-      await insertTreeNode(tree, safe, rpc);
+      await insertTreeNode(tree, safe.replace(/^.+:/, ''), rpc);
 
       e.target.removeAttribute('data-loading');
     });
