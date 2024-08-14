@@ -139,6 +139,10 @@
         background: hsl(216deg 50% 60%);
       }
     }
+
+    svg {
+      inline-size: 24px;
+    }
   </style>
 </head>
 
@@ -165,6 +169,9 @@
   <script type="module">
     const form = document.querySelector('form');
     const tree = document.querySelector('ul');
+    const allAddresses = [];
+    const circularSVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="10 9 15 4 20 9"/><path d="M4 20h7a4 4 0 0 0 4-4V4"/></svg>';
+    const repeatSVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/><path d="M11 10h1v4"/></svg>';
 
     async function getOwners(safe, rpc) {
       const response = await fetch(rpc, {
@@ -173,7 +180,7 @@
         body: JSON.stringify([
           {
             jsonrpc: '2.0',
-            id: 'owners',
+            id: 'ownersResult',
             method: 'eth_call',
             params: [
               {
@@ -185,7 +192,7 @@
           },
           {
             jsonrpc: '2.0',
-            id: 'threshold',
+            id: 'thresholdResult',
             method: 'eth_call',
             params: [
               {
@@ -197,7 +204,7 @@
           },
           {
             jsonrpc: '2.0',
-            id: 'required',
+            id: 'requiredResult',
             method: 'eth_call',
             params: [
               {
@@ -209,30 +216,37 @@
           }
         ])
       }).then(r => r.json());
-      const { owners, threshold, required } = response.reduce((a, c) => ({ ...a, [c.id]: c.result }), {});
-      if (owners === undefined) { // Smart contract reverted
+      const { ownersResult, thresholdResult, requiredResult } = response.reduce((a, c) => ({ ...a, [c.id]: c.result }), {});
+      if (ownersResult === undefined) { // Smart contract reverted
         return {
-          owners: [safe],
-          threshold: -1 // Sentinel value for non Safe smart contract
+          owners: [],
+          threshold: 0,
+          type: 'Unknown smart contract'
         }
       }
-      return {
-        owners: [...owners.replace('0x', '').substring(128).matchAll(/.{64}/g)].map(o => `0x${o[0].substring(24)}`),
-        threshold: Number.isNaN(parseInt(threshold)) ? parseInt(required) : parseInt(threshold)
-      }
+      const owners = [...ownersResult.replace('0x', '').substring(128).matchAll(/.{64}/g)].map(o => `0x${o[0].substring(24)}`);
+      const threshold = Number.isNaN(parseInt(thresholdResult)) ? parseInt(requiredResult) : parseInt(thresholdResult);
+      const type = owners.length === 0 ? 'EOA' : `${threshold}-of-${owners.length}`;
+      return { owners, threshold, type }
     }
 
     async function insertTreeNode(root, safe, rpc) {
-      const { owners, threshold } = await getOwners(safe, rpc);
-      if (owners.length === 0) {
-        root.insertAdjacentHTML('beforeend', `<li>${safe}</li>`);
+      const { owners, threshold, type } = await getOwners(safe, rpc);
+
+      const li = document.createElement('li');
+      root.insertAdjacentElement('beforeend', li);
+      li.textContent = `${safe} (${type})`;
+      if (allAddresses.includes(safe)) {
+        if (type === 'Unknown smart contract' || type === 'EOA') {
+          li.insertAdjacentHTML('beforeend', repeatSVG);
+        }
+        else {
+          li.insertAdjacentHTML('beforeend', circularSVG);
+        }
         return;
       }
-      else if (threshold === -1) {
-        root.insertAdjacentHTML('beforeend', `<li>${safe} (Unknown smart contract)</li>`);
-        return;
-      }
-      root.insertAdjacentHTML('beforeend', `<li>${safe} (${threshold}-of-${owners.length})</li>`);
+      allAddresses.push(safe);
+
       const newRoot = document.createElement('ul');
       root.querySelector('li:last-child').insertAdjacentElement('beforeend', newRoot);
       for (const owner of owners) {
@@ -250,6 +264,7 @@
 
       const { safe, rpc } = Object.fromEntries(new FormData(e.target));
       tree.innerHTML = '';
+      allAddresses.length = 0;
       await insertTreeNode(tree, safe.replace(/^.+:/, ''), rpc);
 
       e.target.removeAttribute('data-loading');
