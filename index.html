@@ -267,7 +267,7 @@
       const { safe, rpc } = Object.fromEntries(new FormData(e.target));
       tree.innerHTML = '';
       allAddresses.length = 0;
-      await insertTreeNode(tree, safe.replace(/^.+:/, ''), rpc);
+      await insertTreeNode(tree, safe.replace(/^.+:/, '').toLowerCase(), rpc);
 
       e.target.removeAttribute('data-loading');
     });
