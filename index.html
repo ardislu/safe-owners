@@ -250,7 +250,7 @@
       allAddresses.push(safe);
 
       const newRoot = document.createElement('ul');
-      root.querySelector('li:last-child').insertAdjacentElement('beforeend', newRoot);
+      root.lastChild.insertAdjacentElement('beforeend', newRoot);
       for (const owner of owners) {
         await insertTreeNode(newRoot, owner, rpc);
       }
