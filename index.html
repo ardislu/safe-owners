@@ -160,7 +160,7 @@
 
   <form>
     <label for="safe">Safe Smart Contract</label>
-    <input id="safe" name="safe" pattern="(.+:)?0x[a-fA-F0-9]{40}" placeholder="0x8CF60B289f8d31F737049B590b5E4285Ff0Bd1D1" value="0x8CF60B289f8d31F737049B590b5E4285Ff0Bd1D1" required>
+    <input id="safe" name="safe" pattern="\s*(.+:)?0x[a-fA-F0-9]{40}\s*" placeholder="0x8CF60B289f8d31F737049B590b5E4285Ff0Bd1D1" value="0x8CF60B289f8d31F737049B590b5E4285Ff0Bd1D1" required>
 
     <label for="rpc">JSON-RPC</label>
     <input id="rpc" name="rpc" type="url" placeholder="https://ethereum.publicnode.com" value="https://ethereum.publicnode.com" required>
@@ -264,7 +264,7 @@
       const { safe, rpc } = Object.fromEntries(new FormData(e.target));
       tree.innerHTML = '';
       allAddresses.length = 0;
-      await insertTreeNode(tree, safe.replace(/^.+:/, '').toLowerCase(), rpc);
+      await insertTreeNode(tree, safe.replace(/^.+:/, '').trim().toLowerCase(), rpc);
       document.querySelectorAll('svg').forEach(svg => {
         svg.addEventListener('mouseover', e => highlightAddress(tree, svg.closest('li').textContent.substring(0, 42)));
         svg.addEventListener('mouseout', e => CSS.highlights.clear());
