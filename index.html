@@ -191,7 +191,7 @@
           jsonrpc: '2.0',
           id,
           method: 'eth_call',
-          params: [{ to: safe, data }, 'safe']
+          params: [{ to: safe, data }, 'latest']
         });
       }
       const response = await fetch(rpc, {
