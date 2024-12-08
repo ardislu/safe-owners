@@ -181,6 +181,7 @@
 
     async function getOwners(safe, rpc) {
       const requests = {
+        ownerResult: '0x8da5cb5b', // owner()
         ownersResult: '0xa0e67e2b', // getOwners()
         thresholdResult: '0xe75235b8', // getThreshold()
         requiredResult: '0xdc8452cd' // required()
@@ -199,8 +200,15 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       }).then(r => r.json());
-      const { ownersResult, thresholdResult, requiredResult } = response.reduce((a, c) => ({ ...a, [c.id]: c.result }), {});
+      const { ownerResult, ownersResult, thresholdResult, requiredResult } = response.reduce((a, c) => ({ ...a, [c.id]: c.result }), {});
 
+      if (ownerResult !== undefined && ownerResult !== '0x') { // Not a Safe, but Ownable which is equal to a 1-of-1 multisig
+        return {
+          owners: [`0x${ownerResult.replace('0x', '').substring(24)}`],
+          threshold: 1,
+          type: 'Ownable'
+        }
+      }
       if (ownersResult === undefined) { // Smart contract reverted
         return {
           owners: [],
