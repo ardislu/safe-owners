@@ -164,6 +164,9 @@
 
     <label for="rpc">JSON-RPC</label>
     <input id="rpc" name="rpc" type="url" placeholder="https://ethereum.publicnode.com" value="https://ethereum.publicnode.com" required>
+    
+    <label for="block">Block number (empty value will default to "latest")</label>
+    <input id="block" name="block" type="number" placeholder="21392053">
 
     <button>Lookup owners</button>
 
@@ -179,7 +182,10 @@
     const circularSVG = '<svg role="img" aria-labelledby="circular" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><title id="circular">Circular reference</title><polyline points="10 9 15 4 20 9"/><path d="M4 20h7a4 4 0 0 0 4-4V4"/></svg>';
     const repeatSVG = '<svg role="img" aria-labelledby="repeat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><title id="circular">Repeated owner</title><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/><path d="M11 10h1v4"/></svg>';
 
-    async function getOwners(safe, rpc) {
+    async function getOwners(safe, rpc, block) {
+      if (block !== 'latest') {
+        block = `0x${block.toString(16)}`;
+      }
       const requests = {
         ownerResult: '0x8da5cb5b', // owner()
         ownersResult: '0xa0e67e2b', // getOwners()
@@ -192,7 +198,7 @@
           jsonrpc: '2.0',
           id,
           method: 'eth_call',
-          params: [{ to: safe, data }, 'latest']
+          params: [{ to: safe, data }, block]
         });
       }
       const response = await fetch(rpc, {
@@ -222,8 +228,8 @@
       return { owners, threshold, type }
     }
 
-    async function insertTreeNode(root, safe, rpc) {
-      const { owners, threshold, type } = await getOwners(safe, rpc);
+    async function insertTreeNode(root, safe, rpc, block) {
+      const { owners, threshold, type } = await getOwners(safe, rpc, block);
 
       const li = document.createElement('li');
       root.insertAdjacentElement('beforeend', li);
@@ -242,7 +248,7 @@
       const newRoot = document.createElement('ul');
       root.lastChild.insertAdjacentElement('beforeend', newRoot);
       for (const owner of owners) {
-        await insertTreeNode(newRoot, owner, rpc);
+        await insertTreeNode(newRoot, owner, rpc, block);
       }
     }
 
@@ -269,10 +275,10 @@
       }
       e.target.setAttribute('data-loading', '');
 
-      const { safe, rpc } = Object.fromEntries(new FormData(e.target));
+      const { safe, rpc, block } = Object.fromEntries(new FormData(e.target));
       tree.innerHTML = '';
       allAddresses.length = 0;
-      await insertTreeNode(tree, safe.replace(/^.+:/, '').trim().toLowerCase(), rpc);
+      await insertTreeNode(tree, safe.replace(/^.+:/, '').trim().toLowerCase(), rpc, block === '' ? 'latest' : Number(block));
       document.querySelectorAll('svg').forEach(svg => {
         svg.addEventListener('mouseover', e => highlightAddress(tree, svg.closest('li').textContent.substring(0, 42)));
         svg.addEventListener('mouseout', e => CSS.highlights.clear());
