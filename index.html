@@ -52,7 +52,7 @@
         background-color: hsl(216deg 15% 80%);
       }
 
-      &[data-loading] output::before {
+      &[data-loading] div:has(button)::after {
         content: 'Loading...';
         content: '⏳' / 'Loading...';
       }
@@ -168,7 +168,9 @@
     <label for="block">Block number (empty value will default to "latest")</label>
     <input id="block" name="block" type="number" placeholder="21392053">
 
-    <button>Lookup owners</button>
+    <div>
+      <button>Lookup owners</button>
+    </div>
 
     <output>
       <ul></ul>
