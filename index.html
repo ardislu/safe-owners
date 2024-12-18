@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="data:,">
+  <link rel="modulepreload" href="/keccak256.js">
   <title>Safe Owners</title>
   <style>
     body {
@@ -181,11 +182,30 @@
   </form>
 
   <script type="module">
+    import { keccak256 } from '/keccak256.js';
+
     const form = document.querySelector('form');
     const tree = document.querySelector('ul');
     const allAddresses = [];
     const circularSVG = '<svg role="img" aria-labelledby="circular" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><title id="circular">Circular reference</title><polyline points="10 9 15 4 20 9"/><path d="M4 20h7a4 4 0 0 0 4-4V4"/></svg>';
     const repeatSVG = '<svg role="img" aria-labelledby="repeat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><title id="circular">Repeated owner</title><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/><path d="M11 10h1v4"/></svg>';
+
+    function toChecksumAddress(address) {
+      address = address.toLowerCase().replace('0x', '');
+      const hash = [...keccak256(address)].map(v => v.toString(16).padStart(2, '0')).join('');
+      let ret = '0x';
+
+      for (let i = 0; i < 40; i++) {
+        if (parseInt(hash[i], 16) >= 8) {
+          ret += address[i].toUpperCase();
+        }
+        else {
+          ret += address[i];
+        }
+      }
+
+      return ret;
+    }
 
     async function getOwners(safe, rpc, block) {
       if (block !== 'latest') {
@@ -238,7 +258,7 @@
 
       const li = document.createElement('li');
       root.insertAdjacentElement('beforeend', li);
-      li.textContent = `${safe} (${type})`;
+      li.textContent = `${toChecksumAddress(safe)} (${type})`;
       if (allAddresses.includes(safe)) {
         if (type === 'Unknown smart contract' || type === 'EOA') {
           li.insertAdjacentHTML('beforeend', repeatSVG);
